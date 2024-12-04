@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixabay Image Search</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <ul class="navbar">
+            <li><a href="index.html">Photos</a></li>
+            <li><a href="videos.html">Videos</a></li>
+        </ul>
+        <h1>Pixabay Image Search</h1>
+        <form id="searchForm">
+            <input type="text" id="query" placeholder="Search for images..." required>
+            <button type="submit">Search</button>
+        </form>
+        <div id="results" class="image-grid"></div>
+        <div class="pagination">
+            <button id="nextBtn" disabled>Next</button>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('searchForm');
+        const resultsDiv = document.getElementById('results');
+        const nextBtn = document.getElementById('nextBtn');
+
+        let currentPage = 1;
+        let currentQuery = '';
+
+        let api_key = '47436418-0f37c345f9abf9796a58e8a65';
+        let type = 'photo'
+
+        const fetchImages = async (query, page) => {
+            const response = await fetch(`pixabay_api.php?query=${query}&page=${page}&type=${type}&key=${api_key}&page=1&per_page=20`);
+            return response.json();
+        };
+
+        const displayImages = (data) => {
+            if (data.hits && data.hits.length > 0) {
+                data.hits.forEach((image) => {
+                    const img = document.createElement('img');
+                    img.src = image.previewURL;
+                    img.alt = image.tags;
+                    resultsDiv.appendChild(img);
+                });
+
+                // Enable the "Next" button if more pages are available
+                nextBtn.disabled = currentPage >= Math.ceil(data.totalHits / 12);
+            } else {
+                resultsDiv.innerHTML = '<p>No images found.</p>';
+                nextBtn.disabled = true;
+            }
+        };
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Reset for a new query
+            currentPage = 1;
+            currentQuery = document.getElementById('query').value;
+            resultsDiv.innerHTML = '<p>Loading...</p>';
+            nextBtn.disabled = true;
+
+            try {
+                const data = await fetchImages(currentQuery, currentPage);
+                resultsDiv.innerHTML = ''; // Clear previous results
+                displayImages(data);
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        });
+
+        nextBtn.addEventListener('click', async () => {
+            currentPage++;
+            nextBtn.disabled = true;
+
+            try {
+                const data = await fetchImages(currentQuery, currentPage);
+                displayImages(data);
+            } catch (error) {
+                resultsDiv.innerHTML += `<p>Error: ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
